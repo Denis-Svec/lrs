@@ -268,15 +268,32 @@ def write_pgm(pixel_data, filename, max_value=255):
         for row in pixel_data:
             f.write(' '.join(map(str, row)) + '\n')
 
+
 def convert_to_numeric(pixel_data):
     """
-    Convert a 2D array of '.' and '#' symbols to a 2D array of 0 and 255 values, respectively.
+    Convert a 2D array of symbols to a 2D array of numerical values.
 
-    :param pixel_data: 2D array containing '.' and '#' symbols.
+    Symbols and their corresponding values:
+        '.' -> 255
+        '#' -> 0
+        'S' -> 150
+        'E' -> 150
+        'x' -> 150
+        '@' -> 150
+
+    :param pixel_data: 2D array containing symbols.
     :return: A new 2D array with numerical values.
     """
-    return [[255 if pixel == '.' else 0 for pixel in row] for row in pixel_data]
+    conversion_dict = {
+        '.': 255,
+        '#': 0,
+        'S': 150,
+        'E': 150,
+        'x': 150,
+        '@': 150
+    }
 
+    return [[conversion_dict.get(pixel, 0) for pixel in row] for row in pixel_data]
 def find_path(start, end, came_from):
     """Find the shortest path from start to end point"""
 
@@ -307,15 +324,16 @@ def draw_path(path, grid):
 
 
 def init():
-
     layers = []
-    files_in_directory = os.listdir('/home/lrs-ubuntu/workspace/src/template_drone_control/src/FEI_LRS_2D/')
+    directory_path = os.path.join('/home', 'lrs-ubuntu', 'workspace', 'src', 'template_drone_control', 'src',
+                                  'FEI_LRS_2D')
+    files_in_directory = os.listdir(directory_path)
 
-    # Filter only the .pgm files
     pgm_files = [f for f in files_in_directory if f.endswith('.pgm')]
     index = 0
     for pgm_file in pgm_files:
-        file_path = os.path.join('/home/lrs-ubuntu/workspace/src/template_drone_control/src/FEI_LRS_2D/', pgm_file)
+        file_path = os.path.join(directory_path, pgm_file)
+
         with open(file_path, "rb") as file:
             byte_data = file.read()
             data = byte_data.decode("utf-8")
@@ -353,8 +371,9 @@ def init():
         path1 = find_path(start_pos, (150, 105), directions)  # Adjusted end point for 3x scaling
 
         grid_with_path1 = draw_path_with_douglas_peucker(path1, copy.deepcopy(filtered_data))
-        layers.append(grid_with_path1)
+
         grid_with_path1_converted = convert_to_numeric(grid_with_path1)
+        layers.append(grid_with_path1_converted)
 
         print(path1)
         write_pgm(grid_with_path1_converted, f'path_output-{index}.pgm')
@@ -368,5 +387,4 @@ if __name__ == "__main__":
     layers = init()
     with open('layers_output.json', 'w') as file:
         json.dump(layers, file)
-
 #'/home/lrs-ubuntu/workspace/src/template_drone_control/src/FEI_LRS_2D/'

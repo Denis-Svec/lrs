@@ -8,6 +8,7 @@
 #include <fstream>
 #include <vector>
 #include <nlohmann/json.hpp>
+#include <unistd.h>
 
 using namespace std::chrono_literals;
 
@@ -64,10 +65,10 @@ private:
     {
         geometry_msgs::msg::PoseStamped current_local_pos_ = *msg;
 
-        // To obtain the position of the drone use this data fields withing the message, please note, that this is the local position of the drone in the NED frame so it is different to the map frame
-         current_local_pos_.pose.position.x
-         current_local_pos_.pose.position.y
-         current_local_pos_.pose.position.z
+//        // To obtain the position of the drone use this data fields withing the message, please note, that this is the local position of the drone in the NED frame so it is different to the map frame
+//         current_local_pos_.pose.position.x
+//         current_local_pos_.pose.position.y
+//         current_local_pos_.pose.position.z
         // you can do the same for orientation, but you will not need it for this seminar
 
 
@@ -91,20 +92,25 @@ private:
     std::vector<std::vector<std::vector<int>>> layers_;
 };
 
-int main(int argc, char **argv)
-{
-    std::ifstream file("layers_output.json");
+int main(int argc, char **argv) {
 
-    // Parse the JSON file
+    std::ifstream file("/home/lrs-ubuntu/Desktop/21.Oct/workspace-lrs/src/template_drone_control/src/layers_output.json");
+    if (!file.is_open()) {
+        std::cerr << "Failed to open layers_output.json" << std::endl;
+        return 1;
+    }
+
     nlohmann::json j;
-    file >> j;
+    std::vector<std::vector<std::vector<int>>> layers;  // Declare layers here
 
-    // Convert the JSON object to a vector of 2D grids
-    std::vector<std::vector<std::vector<int>>> layers = j.get<std::vector<std::vector<std::vector<int>>>>();
-
-    // Now you can work with `layers` in your C++ program
-    // For example, to print the number of layers:
-    std::cout << "Number of layers: " << layers.size() << std::endl;
+    try {
+        file >> j;
+        layers = j.get<std::vector<std::vector<std::vector<int>>>>();  // Assign to layers inside the try block
+        std::cout << "Number of layers: " << layers.size() << std::endl;
+    } catch (const nlohmann::json::exception& e) {
+        std::cerr << "JSON Error: " << e.what() << std::endl;
+        return 1;
+    }
 
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<TemplateDroneControl>(layers));
